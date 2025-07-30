@@ -14,7 +14,7 @@ class User(AbstractUser):
         choices=ROLE_CHOICES,
         default='USER'
     )
-    
+
     avatar = models.ImageField(
         'Profile Picture',
         upload_to='profile_pics/',
@@ -83,6 +83,7 @@ class Relationship(models.Model):
     )
     class Meta:
         unique_together = (('from_user', 'to_user'),)
+        
 class EmailVerificationToken(models.Model):
     user = models.ForeignKey(
         User,
