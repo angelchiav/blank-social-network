@@ -10,6 +10,7 @@ from .serializers import (
     EmailVerificationTokenSerializer,
     ProfileSerializer
 )
+from .permissions import IsOwner
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by('-date_joined')
@@ -21,8 +22,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return PublicUserSerializer
         if self.action == 'change_password':
             return PasswordChangeSerializer
-        if self.action == 'verify_email':
-            return EmailVerificationTokenSerializer
         return UserSerializer
     
     def get_permissions(self):
@@ -34,7 +33,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return [permissions.IsAdminUser()]
         # Details and edit: JUST THE USER
         if self.action in ('retrieve', 'update', 'partial_update', 'change_password'):
-            return [permissions.IsAuthenticated()]
+            return [permissions.IsAuthenticated(), IsOwner()]
         # Destroy: ADMIN ONLY
         if self.action == 'destroy':
             return [permissions.IsAdminUser()]
@@ -47,20 +46,20 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.update(request.user, serializer.validated_data)
         return Response({'detail': 'Password updated succesfully'}, status=status.HTTP_200_OK)
     
-    @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated()])
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
         serializer = PublicUserSerializer(request.user, context={'request': request})
         return Response(serializer.data)
     
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated()])
-    def follow(self, request):
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated, IsOwner], url_path='follow')
+    def follow(self, request, pk=None):
         target = self.get_object()
         if Relationship.objects.filter(from_user=request.user, to_user=target).exists():
             return Response({'detail': 'Already following.'}, status=status.HTTP_400_BAD_REQUEST)
         Relationship.objects.create(from_user=request.user, to_user=target)
         return Response({'detail': 'Now following.'}, status=status.HTTP_200_OK)
     
-    @action(detail=True, methods=['delete'], permission_classes=[permissions.IsAuthenticated()])
+    @action(detail=True, methods=['delete'], permission_classes=[permissions.IsAuthenticated, IsOwner], url_path='unfollow')
     def unfollow(self, request, pk=None):
         target = self.get_object()
         rel = Relationship.objects.filter(from_user=request.user, to_user=target).first()
@@ -72,11 +71,12 @@ class UserViewSet(viewsets.ModelViewSet):
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.select_related('user').all()
     serializer_class = ProfileSerializer
-    permission_classes = [permissions.IsAuthenticated()]
+    permission_classes = [permissions.IsAuthenticated, IsOwner]
 
     def get_object(self):
-        # Always return the user's profile if auth
-        return Profile.objects.get(user=self.request.user)
+        # Return or create the profile for the authenticated user
+        profile, created = Profile.objects.get_or_create(user=self.request.user)
+        return profile
     
     def list(self, request, *args, **kwargs):
         # Not every profile; redirects to me details

@@ -14,10 +14,18 @@ class User(AbstractUser):
         choices=ROLE_CHOICES,
         default='USER'
     )
+    
+    avatar = models.ImageField(
+        'Profile Picture',
+        upload_to='profile_pics/',
+        null=True,
+        blank=True,
+        help_text='Optional'
+    )
 
     USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name', 'email']
-    
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'email']
+
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.email})"
 
@@ -32,14 +40,6 @@ class Profile(models.Model):
         'Bio',
         blank=True,
         null=True,
-        help_text='Optional'
-    )
-
-    avatar = models.ImageField(
-        'Profile Picture',
-        upload_to='profile_pics/',
-        null=True,
-        blank=True,
         help_text='Optional'
     )
 

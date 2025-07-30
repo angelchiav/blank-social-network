@@ -22,28 +22,29 @@ class UserSerializer(serializers.ModelSerializer):
             'password2',
             'role',
             'date_joined',
-            'updated_at',
-            'is_active'
+            'is_active',
+            'avatar'
         ]
-        read_only_fields = ['id', 'is_active', 'updated_at', 'date_joined', 'role']
+        read_only_fields = ['id', 'is_active', 'updated_at', 'role']
         extra_kwargs = {
-        'password': {'write_only': True, 'style': {'input_type': 'password'}}
+        'password': {'write_only': True, 'style': {'input_type': 'password'}},
+        'avatar': {'required': False}
         }
 
     def validate_username(self, value):
         if len(value) < 4:
-            raise serializers.ValidationError("The username need at least 4 characters.")
+            raise serializers.ValidationError("Username must be at least 4 characters long.")
         return value
     
     def validate_email(self, value):
         if User.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError("The email is already registered.")
+            raise serializers.ValidationError("Email is already registered.")
         return value
     
     def validate_role(self, value):
         ALLOWED = ['USER', 'ADMIN', 'MOD']
         if value not in ALLOWED:
-            raise serializers.ValidationError("The role is not valid.")
+            raise serializers.ValidationError("Role is not valid.")
         return value
 
     def validate_password(self, value):
@@ -62,7 +63,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     def validate(self, data):
         if data['password'] != data['password2']:
-            raise serializers.ValidationError("The passwords do not match.")
+            raise serializers.ValidationError("Passwords do not match.")
         return data
     
     def create(self, validated_data):
@@ -137,7 +138,7 @@ class PasswordChangeSerializer(serializers.Serializer):
     def validate_current_password(self, value):
         user = self.context['request'].user
         if not user.check_password(value):
-            raise serializers.ValidationError("The current password do not match.")
+            raise serializers.ValidationError("Current password does not match.")
         return value
     
     def validate_new_password(self, value):
@@ -159,7 +160,7 @@ class PasswordChangeSerializer(serializers.Serializer):
         pw2 = data.get('confirm_new_password')
 
         if pw != pw2:
-            raise serializers.ValidationError("The new passwords do not match.")
+            raise serializers.ValidationError("New passwords do not match.")
         return data
     
     def update(self, instance, validated_data):
@@ -216,7 +217,6 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = [
             'bio',
-            'avatar',
             'github',
             'birth_date',
             'updated_at',
@@ -224,26 +224,25 @@ class ProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['updated_at']
         extra_kwargs = {
             'bio': {'required': False},
-            'avatar': {'required': False},
             'github': {'required': False},
             'birth_date': {'required': False},
         }
 
     def validate_bio(self, value):
         if len(value) > 300:
-            raise serializers.ValidationError("The bio cannot be greater than 300 characters.")
+            raise serializers.ValidationError("Bio cannot exceed 300 characters.")
         return value
     
     def validate_github(self, value):
         if 'github.com' not in value:
-            raise serializers.ValidationError("The URL must to be your GitHub account.")
+            raise serializers.ValidationError("GitHub URL must be valid.")
         return value
 
     def validate_birth_date(self, value):
         if value > date.today():
             raise serializers.ValidationError("Birth date cannot be in the future.")
         if value > date.today() - timedelta(days=16*365):
-            raise serializers.ValidationError("You must be at least 16 years old.")
+            raise serializers.ValidationError("User must be at least 16 years old.")
         return value
 
 class FollowerSerializer(serializers.ModelSerializer):
@@ -289,7 +288,7 @@ class EmailVerificationTokenSerializer(serializers.Serializer):
         try:
             ev = EmailVerificationToken.objects.get(token=value, used=False)
         except EmailVerificationToken.DoesNotExist:
-            raise serializers.ValidationError("Invalid or expired verification token")
+            raise serializers.ValidationError("Invalid or expired verification token.")
         return ev
     
     def save(self, *args, **kwargs):
@@ -301,4 +300,3 @@ class EmailVerificationTokenSerializer(serializers.Serializer):
         ev.used = True
         ev.save(update_fields=['used'])
         return user
-    
