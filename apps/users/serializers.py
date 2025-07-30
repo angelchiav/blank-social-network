@@ -26,10 +26,10 @@ class UserSerializer(serializers.ModelSerializer):
             'birth_date',
             'is_active'
         ]
-    read_only_fields = ['id', 'is_active', 'updated_at', 'date_joined', 'role']
-    extra_kwargs = {
+        read_only_fields = ['id', 'is_active', 'updated_at', 'date_joined', 'role']
+        extra_kwargs = {
         'password': {'write_only': True, 'style': {'input_type': 'password'}}
-    }
+        }
 
     def validate(self, data):
         if data['password'] != data['password2']:
