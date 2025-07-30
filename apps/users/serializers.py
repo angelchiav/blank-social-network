@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import User
+from .models import User, Profile, Relationship, EmailVerificationToken
 from datetime import date, timedelta
 from django.contrib.auth import authenticate, get_user_model
 
@@ -21,12 +21,8 @@ class UserSerializer(serializers.ModelSerializer):
             'password',
             'password2',
             'role',
-            'bio',
-            'avatar',
-            'github',
             'date_joined',
             'updated_at',
-            'birth_date',
             'is_active'
         ]
         read_only_fields = ['id', 'is_active', 'updated_at', 'date_joined', 'role']
@@ -39,32 +35,15 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("The username need at least 4 characters.")
         return value
     
-    def validate_github(self, value):
-        if not 'github.com/' in value.lower():
-            raise serializers.ValidationError("The URL is not valid, NEEDS TO BE GITHUB! >:(.")
-        return value
-    
     def validate_email(self, value):
         if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("The email is already registered.")
-        return value
-    
-    def validate_bio(self, value):
-        if len(value) > 300:
-            raise serializers.ValidationError("The bio has a 300 characters limit.")
         return value
     
     def validate_role(self, value):
         ALLOWED = ['USER', 'ADMIN', 'MOD']
         if value not in ALLOWED:
             raise serializers.ValidationError("The role is not valid.")
-        return value
-
-    def validate_birth_date(self, value):
-        if value > date.today():
-            raise serializers.ValidationError("Birth date cannot be in the future.")
-        if value > date.today() - timedelta(days=16*365):
-            raise serializers.ValidationError("You must be at least 16 years old.")
         return value
 
     def validate_password(self, value):
@@ -155,12 +134,26 @@ class PasswordChangeSerializer(serializers.Serializer):
         required=True
     )
 
-    def validate_new_password(self, value):
+    def validate_current_password(self, value):
         user = self.context['request'].user
         if not user.check_password(value):
             raise serializers.ValidationError("The current password do not match.")
         return value
     
+    def validate_new_password(self, value):
+        import re
+        if len(value) < 8:
+            raise serializers.ValidationError("Password must be at least 8 characters long.")
+        if not re.search(r"\d", value):
+            raise serializers.ValidationError("Password must contain at least one digit.")
+        if not re.search(r"[A-Z]", value):
+            raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+        if not re.search(r"[a-z]", value):
+            raise serializers.ValidationError("Password must contain at least one lowercase letter.")
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
+            raise serializers.ValidationError("Password must contain at least one special character.")
+        return value
+
     def validate(self, data):
         pw = data.get('new_password')
         pw2 = data.get('confirm_new_password')
@@ -176,7 +169,7 @@ class PasswordChangeSerializer(serializers.Serializer):
         return instance
         
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField(
+    username = serializers.CharField(
         write_only=True
     )
 
@@ -199,11 +192,11 @@ class LoginSerializer(serializers.Serializer):
     )
 
     def validate(self, attrs):
-        email = attrs.get('email')
+        username = attrs.get('username')
         password = attrs.get('password')
 
         # Authentication
-        user = authenticate(username=email, password=password)
+        user = authenticate(username=username, password=password)
         if user is None:
             raise serializers.ValidationError("Invalid credentials.", code='authorization')
         if not user.is_active:
@@ -217,3 +210,95 @@ class LoginSerializer(serializers.Serializer):
         attrs['user'] = PublicUserSerializer(user, context=self.context).data
 
         return attrs
+    
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:    
+        model = Profile
+        fields = [
+            'bio',
+            'avatar',
+            'github',
+            'birth_date',
+            'updated_at',
+        ]
+        read_only_fields = ['updated_at']
+        extra_kwargs = {
+            'bio': {'required': False},
+            'avatar': {'required': False},
+            'github': {'required': False},
+            'birth_date': {'required': False},
+        }
+
+    def validate_bio(self, value):
+        if len(value) > 300:
+            raise serializers.ValidationError("The bio cannot be greater than 300 characters.")
+        return value
+    
+    def validate_github(self, value):
+        if 'github.com' not in value:
+            raise serializers.ValidationError("The URL must to be your GitHub account.")
+        return value
+
+    def validate_birth_date(self, value):
+        if value > date.today():
+            raise serializers.ValidationError("Birth date cannot be in the future.")
+        if value > date.today() - timedelta(days=16*365):
+            raise serializers.ValidationError("You must be at least 16 years old.")
+        return value
+
+class FollowerSerializer(serializers.ModelSerializer):
+    follower = serializers.SerializerMethodField()
+    class Meta:
+        model = Relationship
+        fields = [
+            'id',
+            'created_at',
+            'follower'
+        ]
+        read_only_fields = fields
+
+    def get_follower(self, obj):
+        return {
+            'id': obj.from_user.id,
+            'username': obj.from_user.username,
+            'avatar': obj.from_user.avatar if obj.from_user.avatar else None
+        }
+
+class FollowingSerializer(serializers.ModelSerializer):
+    following = serializers.SerializerMethodField()
+    class Meta:
+        model = Relationship
+        fields = [
+            'id',
+            'created_at',
+            'following'
+        ]
+        read_only_fields = fields
+    
+    def get_following(self, obj):
+        return {
+            'id': obj.to_user.id,
+            'username': obj.to_user.username,
+            'avatar': obj.to_user.avatar if obj.to_user.avatar else None
+        }
+    
+class EmailVerificationTokenSerializer(serializers.Serializer):
+    token = serializers.CharField(write_only=True)
+
+    def validate_token(self, value):
+        try:
+            ev = EmailVerificationToken.objects.get(token=value, used=False)
+        except EmailVerificationToken.DoesNotExist:
+            raise serializers.ValidationError("Invalid or expired verification token")
+        return ev
+    
+    def save(self, *args, **kwargs):
+        ev = self.validated_data['token']
+        user = ev.user
+        user.email_verified = True
+        user.is_active = True
+        user.save(update_fields=['email_verified', 'is_active'])
+        ev.used = True
+        ev.save(update_fields=['used'])
+        return user
+    
