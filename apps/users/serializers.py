@@ -46,6 +46,36 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("The URL is not valid, NEEDS TO BE GITHUB! >:(")
         return value
     
+    def validate_email(self, value):
+        if not '@' and '.' and not value.isdigit():
+            raise serializers.ValidationError("The email is not valid")
+        return value
+    
+    def validate_bio(self, value):
+        if len(value) > 300:
+            raise serializers.ValidationError("The bio has a 300 characters limit")
+        return value
+    
+    def validate_role(self, value):
+        ALLOWED = ['USER', 'ADMIN', 'MOD']
+        if value not in ALLOWED:
+            raise serializers.ValidationError("The role is not valid")
+        return value
+
+    def validate_password(self, value):
+        import re
+        if len(value) < 8:
+            raise serializers.ValidationError("Password must be at least 8 characters long.")
+        if not re.search(r"\d", value):
+            raise serializers.ValidationError("Password must contain at least one digit.")
+        if not re.search(r"[A-Z]", value):
+            raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+        if not re.search(r"[a-z]", value):
+            raise serializers.ValidationError("Password must contain at least one lowercase letter.")
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
+            raise serializers.ValidationError("Password must contain at least one special character.")
+        return value
+    
     def create(self, validated_data):
         password = validated_data.pop('password')
         validated_data.pop('password2')
@@ -53,4 +83,3 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
-    
