@@ -11,20 +11,25 @@ class PostSerializer(serializers.ModelSerializer):
         source='author.id',
         read_only=True
     )
+
+    likes_count = serializers.SerializerMethodField()
+    is_liked = serializers.SerializerMethodField()
+
     class Meta:
         model = Post
         fields = [
             'id',
-            'author',
             'author_username',
             'author_id',
             'content',
             'image',
             'created_at',
             'updated_at',
-            'visibility'
+            'visibility',
+            'likes_count',
+            'is_liked'
         ]
-        read_only_fields = ['id', 'created_at', 'author', 'updated_at', 'author_username', 'author_id']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'author_username', 'author_id', 'likes_count', 'is_liked']
 
     def validate_content(self, value):
         if len(value) > 280:
@@ -37,6 +42,14 @@ class PostSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Visibility is not correct")
         return value
 
+    def get_likes_count(self, obj):
+        return obj.likes.count()
+    
+    def get_is_liked(self, obj):
+        request = self.context.get('request')
+        user = request.user if request else None
+        return obj.likes.filter(user=user).exists() if user and user.is_authenticated else False
+    
     def create(self, validated_data):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
@@ -53,6 +66,7 @@ class PostListSerializer(serializers.ModelSerializer):
         source='author.id',
         read_only=True
     )
+
     class Meta:
         model = Post
         fields = [
@@ -64,4 +78,3 @@ class PostListSerializer(serializers.ModelSerializer):
             'created_at'
         ]
         read_only_fields = ['id', 'author_username', 'author_id', 'created_at']
-
