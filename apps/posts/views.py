@@ -14,7 +14,7 @@ class PostViewSets(viewsets.ModelViewSet):
             return PostListSerializer
         return PostSerializer
     
-    def perfom_create(self, serializer):
+    def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
     def get_queryset(self): # Author filter
