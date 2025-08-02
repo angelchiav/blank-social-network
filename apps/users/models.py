@@ -26,6 +26,20 @@ class User(AbstractUser):
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['first_name', 'last_name', 'email']
+        
+    def clean(self):
+        if self.avatar and self.avatar.size > 2 * 1024 * 1024:
+            raise ValidationError(
+                "Avatar too large."
+            )
+        
+    @property
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    @property
+    def get_short_name(self):
+        return f"{self.first_name}"
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.email})"
@@ -63,11 +77,18 @@ class Profile(models.Model):
         auto_now=True
     )
 
+    created_at = models.DateTimeField(
+        'Created At',
+        auto_now_add=True
+    )
+    
     @property
     def age(self):
         from datetime import date
+        if not self.birth_date:
+            return None
         return (date.today() - self.birth_date).days // 365
-    
+
     def clean(self):
         if self.birth_date and self.age < 16:
             raise ValidationError(

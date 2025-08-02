@@ -57,7 +57,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if Relationship.objects.filter(from_user=request.user, to_user=target).exists():
             return Response({'detail': 'Already following.'}, status=status.HTTP_400_BAD_REQUEST)
         Relationship.objects.create(from_user=request.user, to_user=target)
-        return Response({'detail': 'Now following.'}, status=status.HTTP_200_OK)
+        return Response({'detail': 'Now following.'}, statusb=status.HTTP_200_OK)
     
     @action(detail=True, methods=['delete'], permission_classes=[permissions.IsAuthenticated, IsOwner], url_path='unfollow')
     def unfollow(self, request, pk=None):
