@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 
 class User(AbstractUser):
 
@@ -62,6 +63,20 @@ class Profile(models.Model):
         auto_now=True
     )
 
+    @property
+    def age(self):
+        from datetime import date
+        return (date.today() - self.birth_date).days // 365
+    
+    def clean(self):
+        if self.birth_date and self.age < 16:
+            raise ValidationError(
+                "User must be at least 16 years old."
+            )
+    
+    def __str__(self):
+        return f"{self.user.username.capitalize()}'s Profile"
+        
 class Relationship(models.Model):
     from_user = models.ForeignKey(
         User,
@@ -83,6 +98,15 @@ class Relationship(models.Model):
     )
     class Meta:
         unique_together = (('from_user', 'to_user'),)
+
+    def clean(self):
+        if self.from_user == self.to_user:
+            raise ValidationError(
+                "User cannot follow themselves."
+            )
+
+    def __str__(self):
+        return f"{self.from_user} follows {self.to_user}."
         
 class EmailVerificationToken(models.Model):
     user = models.ForeignKey(
@@ -106,3 +130,6 @@ class EmailVerificationToken(models.Model):
         'The token is used',
         default=False
     )
+
+    def __str__(self):
+        return f"Token for {self.user.email} (used: {self.used})"
