@@ -141,7 +141,7 @@ pip install -r requirements.txt
 python manage.py makemigrations
 python manage.py migrate
 
-# Create superuser
+# Create superuser (optional)
 python manage.py createsuperuser
 
 # Run development server
