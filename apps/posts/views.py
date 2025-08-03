@@ -36,5 +36,3 @@ class PostViewSets(viewsets.ModelViewSet):
             return Response({'status': 'unliked'}, status=status.HTTP_200_OK)
         
         return Response({'status': 'liked'}, status=status.HTTP_201_CREATED)
-    
-    

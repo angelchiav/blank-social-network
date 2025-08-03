@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 class Post(models.Model):
     VISIBILITY_CHOICES = [
@@ -40,6 +41,15 @@ class Post(models.Model):
     class Meta:
         ordering = ['-created_at']
 
+    def validate_content(self, value):
+        if not "#" in value:
+            raise ValidationError(
+                "Hashtag (#) is necessary to make the post"
+            )
+        return value
+    
+
+
     def __str__(self):
         return f'Post {self.id} by {self.author.username}'
     
@@ -62,4 +72,4 @@ class Like(models.Model):
 
     class Meta:
         unique_together = ['user', 'post'] # One user can like a post just once
-        
+    

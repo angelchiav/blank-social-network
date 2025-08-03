@@ -34,6 +34,12 @@ class PostSerializer(serializers.ModelSerializer):
     def validate_content(self, value):
         if len(value) > 280:
             raise serializers.ValidationError("Content characters cannot be greater than 280")
+        
+        if not "#" in value:
+            raise serializers.ValidationError(
+                "Hashtag (#) is necessary to make the post"
+            )
+        
         return value
     
     def validate_visibility(self, value):
