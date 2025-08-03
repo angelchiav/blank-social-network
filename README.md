@@ -128,7 +128,7 @@ POST   /api/posts/{id}/like/ # Toggle like on post
 ```bash
 # Clone the repository
 git clone https://www.github.com/angelchiav/blank-social-network.git
-cd social-network
+cd blank-social-network
 
 # Create and activate virtual environment
 python -m venv venv
@@ -141,7 +141,7 @@ pip install -r requirements.txt
 python manage.py makemigrations
 python manage.py migrate
 
-# Create superuser
+# Create superuser (optional)
 python manage.py createsuperuser
 
 # Run development server
