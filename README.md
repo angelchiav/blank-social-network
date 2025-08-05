@@ -148,14 +148,6 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-### Environment Variables
-Create a `.env` file in the project root:
-```env
-SECRET_KEY=your-secret-key-here
-DEBUG=True
-DATABASE_URL=sqlite:///db.sqlite3
-```
-
 ## 🔐 Authentication & Security
 
 ### JWT Token Authentication
@@ -195,7 +187,7 @@ POST /api/users/
 POST /api/posts/
 Headers: Authorization: Bearer <access_token>
 {
-    "content": "Just built an amazing Django API! #coding #django",
+    "content": "Just testing! #coding #django",
     "visibility": "public"
 }
 ```
@@ -205,29 +197,6 @@ Headers: Authorization: Bearer <access_token>
 POST /api/users/5/follow/
 Headers: Authorization: Bearer <access_token>
 ```
-
-## 🧪 Testing
-
-### Running Tests
-```bash
-# Run all tests
-python manage.py test
-
-# Run specific app tests
-python manage.py test apps.users
-python manage.py test apps.posts
-
-# Run with coverage
-pip install coverage
-coverage run --source='.' manage.py test
-coverage report
-```
-
-### Test Coverage
-- Model validation testing
-- API endpoint testing
-- Permission system testing
-- Authentication flow testing
 
 ## 🚀 Deployment
 
@@ -263,7 +232,7 @@ coverage report
 ## 📋 Roadmap
 
 ### Planned Features
-- [ ] **Comments System** - Threaded comments on posts
+- [x] **Comments System** - Threaded comments on posts
 - [ ] **Notifications** - Real-time notifications for interactions
 - [ ] **Media Management** - Video and audio post support
 - [ ] **Search & Discovery** - Advanced search with hashtags and mentions
