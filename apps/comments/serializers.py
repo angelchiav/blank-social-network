@@ -29,8 +29,14 @@ class CommentSerializer(serializers.ModelSerializer):
         return obj.replies.count()
     
     def validate_content(self, value):
-        if value < 1:
+        if len(value.strip()) < 1:
             raise serializers.ValidationError(
                 "Comment cannot be empty."
             )
+        
+        if len(value) > 280:
+            raise serializers.ValidationError(
+                "Comment too long. (max 280 characters)"
+            )
+        
         return value

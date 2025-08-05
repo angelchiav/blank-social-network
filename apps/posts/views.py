@@ -10,11 +10,9 @@ class PostViewSets(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_serializer_class(self):
-        match self.action:
-            case 'list':
-                return PostListSerializer
-            case _:
-                return PostSerializer
+        if self.action == 'list':
+            return PostListSerializer
+        return PostSerializer
     
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)

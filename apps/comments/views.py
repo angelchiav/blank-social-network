@@ -18,8 +18,6 @@ class CommentViewSet(viewsets.ModelViewSet):
         
         except (TypeError, ValueError):
             return Comment.objects.none()
-        
-
     
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
