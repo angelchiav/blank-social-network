@@ -28,7 +28,8 @@ class PostSerializer(serializers.ModelSerializer):
             'updated_at',
             'visibility',
             'likes_count',
-            'is_liked'
+            'is_liked',
+            'comments_count'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'author_username', 'author_id', 'likes_count', 'is_liked']
 
