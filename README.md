@@ -252,11 +252,3 @@ Headers: Authorization: Bearer <access_token>
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👥 Team
-
-- **Developer**: [angelchiav](https://github.com/angelchiav)
-
-## 📞 Support
-
-For support, please open an issue on GitHub or contact the development team.
